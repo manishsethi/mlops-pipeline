@@ -5,6 +5,7 @@ import numpy as np
 import logging
 import sqlite3
 import json
+import shutil
 from datetime import datetime
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException
@@ -16,65 +17,42 @@ from src.metrics import metrics_endpoint_fastapi
 # =========================================================
 # Logging Configuration
 # =========================================================
-# Setup logger
-os.makedirs("logs", exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     handlers=[
         logging.FileHandler("logs/api.log"),  # Log file
-        logging.StreamHandler()  # Console output
+        logging.StreamHandler()
     ],
 )
-
 logger = logging.getLogger("ml_model_api")
 
 # =========================================================
-# App Initialization
+# Paths & Config
 # =========================================================
-app = FastAPI(
-    title="ML Model API",
-    version="2.0.0",
-    description="API for serving multiple ML models (Iris classification & Housing regression).",
-)
+DB_PATH = "/app/data/predictions.db"  # allow override via env var
+EXPECTED_FEATURES = {"iris": 4, "housing": 8}  # Map of task -> expected feature count
+
+# Ensure logs directory exists
+os.makedirs("logs", exist_ok=True)
+
+# Ensure DB path dir exists & fix accidental dir issue
+if os.path.isdir(DB_PATH):
+    logging.warning(f"{DB_PATH} exists as a directory — removing it so SQLite can create a file")
+    try:
+        shutil.rmtree(DB_PATH)
+    except Exception as e:
+        logger.error(f"Failed to remove directory {DB_PATH}: {e}")
+
+
+parent_dir = os.path.dirname(DB_PATH) or "."
+os.makedirs(parent_dir, exist_ok=True)
 
 # =========================================================
-# Configuration
+# Initialize DB
 # =========================================================
-# Map of task -> expected feature count
-EXPECTED_FEATURES = {"iris": 4, "housing": 8}
-
-# Model and scaler storage
-MODELS = {}
-SCALERS = {}
-
-
-# =========================================================
-# Load Models & Scalers at Startup
-# =========================================================
-def load_artifacts():
-    for task in EXPECTED_FEATURES.keys():
-        model_path = f"models/{task}_best_model.pkl"
-        scaler_path = f"models/{task}_scaler.pkl"
-
-        if os.path.exists(model_path) and os.path.exists(scaler_path):
-            try:
-                MODELS[task] = joblib.load(model_path)
-                SCALERS[task] = joblib.load(scaler_path)
-                logging.info(f"Loaded {task} model and scaler.")
-            except Exception as e:
-                logging.error(f"Error loading {task} artifacts: {e}")
-        else:
-            logging.warning(
-                f"Artifacts for task '{task}' not found: "
-                f"{model_path}, {scaler_path}"
-            )
-
-load_artifacts()
-
-
-def log_prediction(task: str, features: list, prediction: list, response_time: float):
-    conn = sqlite3.connect("predictions.db")
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS predictions (
@@ -86,13 +64,58 @@ def log_prediction(task: str, features: list, prediction: list, response_time: f
             timestamp TEXT
         )
     """)
-    cursor.execute("""
-        INSERT INTO predictions (task, input_data, prediction, response_time, timestamp)
-        VALUES (?, ?, ?, ?, datetime('now'))
-    """, (task, json.dumps(features), json.dumps(prediction), response_time))
     conn.commit()
     conn.close()
 
+init_db()
+
+# =========================================================
+# App Initialization
+# =========================================================
+app = FastAPI(
+    title="ML Model API",
+    version="2.0.0",
+    description="API for serving multiple ML models (Iris classification & Housing regression).",
+)
+
+# Model and scaler storage
+MODELS = {}
+SCALERS = {}
+
+# =========================================================
+# Load Models & Scalers at Startup
+# =========================================================
+def load_artifacts():
+    for task in EXPECTED_FEATURES.keys():
+        model_path = f"models/{task}_best_model.pkl"
+        scaler_path = f"models/{task}_scaler.pkl"
+        if os.path.exists(model_path) and os.path.exists(scaler_path):
+            try:
+                MODELS[task] = joblib.load(model_path)
+                SCALERS[task] = joblib.load(scaler_path)
+                logger.info(f"Loaded {task} model and scaler.")
+            except Exception as e:
+                logger.error(f"Error loading {task} artifacts: {e}")
+        else:
+            logger.warning(f"Artifacts for '{task}' not found: {model_path}, {scaler_path}")
+
+load_artifacts()
+
+# =========================================================
+# Utility: Log prediction
+# =========================================================
+def log_prediction(task: str, features: list, prediction: list, response_time: float):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO predictions (task, input_data, prediction, response_time, timestamp)
+            VALUES (?, ?, ?, ?, datetime('now'))
+        """, (task, json.dumps(features), json.dumps(prediction), response_time))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Failed to log prediction: {e}")
 
 # =========================================================
 # Request & Response Schemas
@@ -104,17 +127,12 @@ class PredictionRequest(BaseModel):
     @field_validator("features")
     @classmethod
     def validate_features(cls, v, info: ValidationInfo):
-        task = info.data.get("task")  # access other fields from info.data dictionary
+        task = info.data.get("task")
         if task not in EXPECTED_FEATURES:
-            raise ValueError(
-                f"Unknown task '{task}'. Must be one of {list(EXPECTED_FEATURES.keys())}"
-            )
+            raise ValueError(f"Unknown task '{task}'. Must be one of {list(EXPECTED_FEATURES.keys())}")
         if len(v) != EXPECTED_FEATURES[task]:
-            raise ValueError(
-                f"Expected {EXPECTED_FEATURES[task]} features for '{task}', got {len(v)}"
-            )
+            raise ValueError(f"Expected {EXPECTED_FEATURES[task]} features for '{task}', got {len(v)}")
         return v
-
 
 class PredictionResponse(BaseModel):
     task: str
@@ -122,7 +140,6 @@ class PredictionResponse(BaseModel):
     prediction_probabilities: Optional[List[List[float]]] = None
     response_time_seconds: float
     timestamp: str
-
 
 # =========================================================
 # Routes
@@ -139,12 +156,9 @@ async def root():
         ],
     }
 
-
 @app.get("/metrics")
 def metrics():
-    """Expose Prometheus metrics"""
     return metrics_endpoint_fastapi()
-
 
 @app.get("/health")
 async def health_check():
@@ -174,10 +188,10 @@ async def predict(request: PredictionRequest):
 
         response_time = (datetime.now() - start_time).total_seconds()
 
-        # === Log prediction persistently to SQLite ===
+        # Log prediction persistently to SQLite
         log_prediction(request.task, request.features, prediction.tolist(), response_time)
 
-        # === Record Prometheus metrics ===
+        # Record Prometheus metrics
         metrics_collector.record_prediction(latency=response_time)
 
         return PredictionResponse(

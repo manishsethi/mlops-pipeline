@@ -8,3 +8,13 @@
 2025-08-09 19:40:47,200 [INFO] root: Loaded housing model and scaler.
 2025-08-09 19:41:21,448 [INFO] root: Loaded iris model and scaler.
 2025-08-09 19:41:21,597 [INFO] root: Loaded housing model and scaler.
+2025-08-09 20:04:39,523 [INFO] root: Loaded iris model and scaler.
+2025-08-09 20:04:39,813 [INFO] root: Loaded housing model and scaler.
+2025-08-09 20:11:13,900 [INFO] root: Loaded iris model and scaler.
+2025-08-09 20:11:14,122 [INFO] root: Loaded housing model and scaler.
+2025-08-09 20:23:15,513 [WARNING] root: predictions.db exists as a directory — removing it so SQLite can create a file
+2025-08-09 20:23:15,513 [ERROR] ml_model_api: Failed to remove directory predictions.db: [Errno 16] Device or resource busy: 'predictions.db'
+2025-08-09 20:27:32,792 [WARNING] root: predictions.db exists as a directory — removing it so SQLite can create a file
+2025-08-09 20:27:32,793 [ERROR] ml_model_api: Failed to remove directory predictions.db: [Errno 16] Device or resource busy: 'predictions.db'
+2025-08-09 20:31:17,325 [INFO] ml_model_api: Loaded iris model and scaler.
+2025-08-09 20:31:17,556 [INFO] ml_model_api: Loaded housing model and scaler.

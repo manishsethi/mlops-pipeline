@@ -8,7 +8,7 @@ services:
     volumes:
       - ./models:/app/models
       - ./logs:/app/logs
-      - ./predictions.db:/app/predictions.db
+      - predictions-db-data:/app/data
     environment:
       - FLASK_ENV=production
     healthcheck:
@@ -35,3 +35,4 @@ services:
 
 volumes:
   grafana-storage:
+  predictions-db-data:
