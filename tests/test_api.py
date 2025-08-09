@@ -5,7 +5,7 @@ from src.Fast_api import app  # Import your FastAPI app
 import os, joblib
 import numpy as np
 from sklearn.dummy import DummyClassifier
-from src.Fastapi_app import app, MODELS, SCALERS
+from src.Fast_api import app, MODELS, SCALERS
 
 client = TestClient(app)  # Instantiate TestClient for your FastAPI app
 
