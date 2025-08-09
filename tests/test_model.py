@@ -3,13 +3,18 @@ import pytest
 import joblib
 import numpy as np
 from sklearn.datasets import load_iris
-from src.train import train_models
+from src.train import train_classification, train_regression
 
-def test_model_training():
-    """Test model training process"""
-    # This would be a more comprehensive test in practice
-    model = train_models()
+def test_train_classification():
+    name, model, metrics = train_classification()
     assert model is not None
+    assert "accuracy" in metrics
+
+def test_train_regression():
+    name, model, metrics = train_regression()
+    assert model is not None
+    assert "rmse" in metrics
+
     
 def test_model_prediction():
     """Test model prediction"""
