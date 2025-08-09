@@ -2,7 +2,7 @@
 services:
   ml-api:
     build: .
-    image: manishsethi/mlops-pipeline-ml-api:latest
+    image: manishsethis/mlops-pipeline-ml-api:latest
     ports:
       - "5000:5000"
     volumes:

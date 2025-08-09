@@ -10,7 +10,7 @@ on:
 env:
   DOCKER_IMAGE_NAME: mlops-pipeline-ml-api
   DOCKER_REGISTRY: docker.io
-  DOCKER_USERNAME: manishsethi
+  DOCKER_USERNAME: manishsethis
 
 jobs:
   test:
