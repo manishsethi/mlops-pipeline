@@ -1,6 +1,7 @@
 # src/retraining.py
 import sqlite3
 import pandas as pd
+import os
 import numpy as np
 from datetime import datetime, timedelta
 import joblib
