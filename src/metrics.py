@@ -6,6 +6,7 @@ from prometheus_client import (
     Histogram,
     generate_latest,
 )
+import sqlite3
 
 # ===== PROMETHEUS METRICS DEFINITIONS =====
 
