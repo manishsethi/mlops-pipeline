@@ -1,54 +1,39 @@
 # tests/test_api.py
 import pytest
-import json
-import numpy as np
-from src.api import app
+from fastapi.testclient import TestClient
+from src.Fastapi_app import app  # Import your FastAPI app
 
-@pytest.fixture
-def client():
-    """Create test client"""
-    app.config['TESTING'] = True
-    with app.test_client() as client:
-        yield client
+client = TestClient(app)  # Instantiate TestClient for your FastAPI app
 
-def test_health_endpoint(client):
-    """Test health check endpoint"""
-    response = client.get('/health')
+def test_health_endpoint():
+    response = client.get("/health")
     assert response.status_code == 200
-    data = json.loads(response.data)
+    data = response.json()
     assert 'status' in data
     assert data['status'] == 'healthy'
 
-def test_predict_endpoint_valid_input(client):
-    """Test prediction with valid input"""
+def test_predict_endpoint_valid_input():
     test_data = {
-        'features': [5.1, 3.5, 1.4, 0.2]  # Sample iris features
+        "task": "iris",
+        "features": [5.1, 3.5, 1.4, 0.2]
     }
-    
-    response = client.post('/predict', 
-                          data=json.dumps(test_data),
-                          content_type='application/json')
-    
+    response = client.post("/predict", json=test_data)
     assert response.status_code == 200
-    data = json.loads(response.data)
+    data = response.json()
     assert 'prediction' in data
     assert 'response_time_seconds' in data
 
-def test_predict_endpoint_invalid_input(client):
-    """Test prediction with invalid input"""
+def test_predict_endpoint_invalid_input():
     test_data = {
-        'features': [1, 2]  # Wrong number of features
+        "task": "iris",
+        "features": [1, 2]  # Wrong number of features
     }
-    
-    response = client.post('/predict',
-                          data=json.dumps(test_data),
-                          content_type='application/json')
-    
-    assert response.status_code == 400
+    response = client.post("/predict", json=test_data)
+    assert response.status_code == 422  # FastAPI validation error status code
 
-def test_metrics_endpoint(client):
-    """Test metrics endpoint"""
-    response = client.get('/metrics')
+def test_metrics_endpoint():
+    response = client.get("/metrics")
     assert response.status_code == 200
-    data = json.loads(response.data)
-    assert 'total_predictions' in data
+    # /metrics returns raw Prometheus text format, so response.json() will fail,
+    # so just check content type
+    assert "text/plain" in response.headers.get("content-type", "")
