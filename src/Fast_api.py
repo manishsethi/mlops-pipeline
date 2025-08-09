@@ -17,6 +17,7 @@ from src.metrics import metrics_endpoint_fastapi
 # Logging Configuration
 # =========================================================
 # Setup logger
+os.makedirs("logs", exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
