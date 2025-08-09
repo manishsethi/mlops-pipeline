@@ -3,6 +3,8 @@ import logging
 import os
 import joblib
 import numpy as np
+import logging
+import sqlite3, json
 from datetime import datetime
 from typing import List, Optional
 
@@ -10,6 +12,21 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ValidationInfo, field_validator
 
 from src.metrics import metrics_endpoint_fastapi
+
+# =========================================================
+# Logging Configuration
+# =========================================================
+# Setup logger
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[
+        logging.FileHandler("logs/api.log"),  # Log file
+        logging.StreamHandler()  # Console output
+    ],
+)
+
+logger = logging.getLogger("ml_model_api")
 
 # =========================================================
 # App Initialization
@@ -54,6 +71,30 @@ def load_artifacts():
 
 
 load_artifacts()
+
+def log_prediction(task: str, features: list, prediction: list, response_time: float):
+    conn = sqlite3.connect("predictions.db")
+    cursor = conn.cursor()
+
+    # Create table if not exists
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS predictions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task TEXT,
+            input_data TEXT,
+            prediction TEXT,
+            response_time REAL,
+            timestamp TEXT
+        )
+    """)
+
+    cursor.execute("""
+        INSERT INTO predictions (task, input_data, prediction, response_time, timestamp)
+        VALUES (?, ?, ?, ?, datetime('now'))
+    """, (task, json.dumps(features), json.dumps(prediction), response_time))
+
+    conn.commit()
+    conn.close()
 
 
 # =========================================================
@@ -142,6 +183,7 @@ async def predict(request: PredictionRequest):
             prediction_proba = model.predict_proba(features_scaled).tolist()
 
         response_time = (datetime.now() - start_time).total_seconds()
+        logger.info(f"Prediction result: {prediction.tolist()}, took {response_time:.4f} seconds")
 
         return PredictionResponse(
             task=request.task,
@@ -151,4 +193,5 @@ async def predict(request: PredictionRequest):
             timestamp=datetime.now().isoformat(),
         )
     except Exception as e:
+        logger.error(f"Prediction error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
