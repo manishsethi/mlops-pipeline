@@ -43,6 +43,7 @@ def load_and_preprocess_iris():
     # Save scaler
     joblib.dump(scaler, "models/scaler.pkl")
     print("✅ Iris data processed and saved.")
+    return X_train_scaled, X_test_scaled, y_train, y_test
 
 
 def load_and_preprocess_housing():
@@ -86,6 +87,7 @@ def load_and_preprocess_housing():
     # Save scaler
     joblib.dump(scaler, "models/scaler.pkl")
     print("✅ Housing data processed and saved.")
+    return X_train_scaled, X_test_scaled, y_train, y_test
 
 
 if __name__ == "__main__":

@@ -2,6 +2,10 @@
 import pytest
 from fastapi.testclient import TestClient
 from src.Fast_api import app  # Import your FastAPI app
+import os, joblib
+import numpy as np
+from sklearn.dummy import DummyClassifier
+from src.Fastapi_app import app, MODELS, SCALERS
 
 client = TestClient(app)  # Instantiate TestClient for your FastAPI app
 
@@ -11,6 +15,23 @@ def test_health_endpoint():
     data = response.json()
     assert 'status' in data
     assert data['status'] == 'healthy'
+
+@pytest.fixture(autouse=True)
+def prepare_artifacts(tmp_path):
+    # Create a trivial model and scaler for Iris
+    model = DummyClassifier(strategy="most_frequent")
+    scaler = lambda X: X  # identity
+
+    # Save to models folder
+    os.makedirs("models", exist_ok=True)
+    joblib.dump(model, "models/iris_best_model.pkl")
+    joblib.dump(scaler, "models/iris_scaler.pkl")
+
+    # Force reload artifacts in the running app
+    MODELS["iris"] = model
+    SCALERS["iris"] = scaler
+
+    yield
 
 def test_predict_endpoint_valid_input():
     test_data = {
@@ -37,3 +58,4 @@ def test_metrics_endpoint():
     # /metrics returns raw Prometheus text format, so response.json() will fail,
     # so just check content type
     assert "text/plain" in response.headers.get("content-type", "")
+
