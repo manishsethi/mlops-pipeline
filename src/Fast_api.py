@@ -72,11 +72,9 @@ def load_artifacts():
 
 load_artifacts()
 
-def log_prediction(task: str, features: list, prediction: list, response_time: float):
+def log_prediction(task, features, prediction, response_time):
     conn = sqlite3.connect("predictions.db")
     cursor = conn.cursor()
-
-    # Create table if not exists
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS predictions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -87,12 +85,10 @@ def log_prediction(task: str, features: list, prediction: list, response_time: f
             timestamp TEXT
         )
     """)
-
     cursor.execute("""
         INSERT INTO predictions (task, input_data, prediction, response_time, timestamp)
         VALUES (?, ?, ?, ?, datetime('now'))
     """, (task, json.dumps(features), json.dumps(prediction), response_time))
-
     conn.commit()
     conn.close()
 
@@ -162,28 +158,26 @@ async def health_check():
 async def predict(request: PredictionRequest):
     start_time = datetime.now()
 
-    # Get matching model and scaler
     model = MODELS.get(request.task)
     scaler = SCALERS.get(request.task)
-
     if model is None or scaler is None:
-        raise HTTPException(
-            status_code=500, detail=f"No model/scaler loaded for task '{request.task}'."
-        )
+        metrics_collector.record_error(error_type="model_missing")
+        raise HTTPException(status_code=500, detail=f"No model/scaler for {request.task}")
 
     try:
-        # Prepare input
         features = np.array(request.features).reshape(1, -1)
         features_scaled = scaler.transform(features)
-
-        # Predict
         prediction = model.predict(features_scaled)
-        prediction_proba = None
-        if hasattr(model, "predict_proba"):
-            prediction_proba = model.predict_proba(features_scaled).tolist()
+        prediction_proba = model.predict_proba(features_scaled).tolist() if hasattr(model, "predict_proba") else None
 
+        # Calculate response time
         response_time = (datetime.now() - start_time).total_seconds()
-        logger.info(f"Prediction result: {prediction.tolist()}, took {response_time:.4f} seconds")
+
+        # 🔹 Call SQLite logging function
+        log_prediction(request.task, request.features, prediction.tolist(), response_time)
+
+        # 🔹 Record Prometheus metrics
+        metrics_collector.record_prediction(latency=response_time)
 
         return PredictionResponse(
             task=request.task,
@@ -192,6 +186,8 @@ async def predict(request: PredictionRequest):
             response_time_seconds=response_time,
             timestamp=datetime.now().isoformat(),
         )
+
     except Exception as e:
-        logger.error(f"Prediction error: {str(e)}")
+        metrics_collector.record_error(error_type="prediction_failure")
         raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+
