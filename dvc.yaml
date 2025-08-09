@@ -1,0 +1,23 @@
+# dvc.yaml
+stages:
+  train_iris:
+    cmd: python src/train.py --task iris
+    deps:
+    - src/train.py
+    - data/processed/iris_train.csv
+    outs:
+    - models/iris_best_model.pkl
+    - models/iris_scaler.pkl
+    metrics:
+    - metrics_iris.json
+
+  train_housing:
+    cmd: python src/train.py --task housing
+    deps:
+    - src/train.py
+    - data/processed/housing_train.csv
+    outs:
+    - models/housing_best_model.pkl
+    - models/housing_scaler.pkl
+    metrics:
+    - metrics_housing.json

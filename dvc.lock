@@ -1,0 +1,67 @@
+schema: '2.0'
+stages:
+  data_preparation:
+    cmd: python src/data_loader.py
+    deps:
+    - path: src/data_loader.py
+      hash: md5
+      md5: 864a6370c5bc114c1a8c90a925157fd5
+      size: 2800
+    outs:
+    - path: data/processed
+      hash: md5
+      md5: ad85c01f4ab330366070be5c32cb49f7.dir
+      size: 3393641
+      nfiles: 4
+    - path: models/scaler.pkl
+      hash: md5
+      md5: 8974aaddc923a7588ec48f65741ff1e6
+      size: 1143
+  train_iris:
+    cmd: python src/train.py --task iris
+    deps:
+    - path: data/processed/iris_train.csv
+      hash: md5
+      md5: 877c853cec8968b8df1cbacaeca4c4a6
+      size: 9832
+    - path: src/train.py
+      hash: md5
+      md5: 7449969173e6674678fec96e5bbb753c
+      size: 4654
+    outs:
+    - path: metrics_iris.json
+      hash: md5
+      md5: 00ad38a4a3379cde256531f918b76e86
+      size: 115
+    - path: models/iris_best_model.pkl
+      hash: md5
+      md5: 639d05a4d135fffb271177d9bd9084d3
+      size: 991
+    - path: models/iris_scaler.pkl
+      hash: md5
+      md5: cdeff9bb623d02f992d60634856a97ec
+      size: 1047
+  train_housing:
+    cmd: python src/train.py --task housing
+    deps:
+    - path: data/processed/housing_train.csv
+      hash: md5
+      md5: ca284d758524c67713963c2f8f36bf23
+      size: 2714759
+    - path: src/train.py
+      hash: md5
+      md5: 7449969173e6674678fec96e5bbb753c
+      size: 4654
+    outs:
+    - path: metrics_housing.json
+      hash: md5
+      md5: ca30e539d41f4cc43fa3a778d956df89
+      size: 108
+    - path: models/housing_best_model.pkl
+      hash: md5
+      md5: 741a8b57518ececab3a8aa2084778ca3
+      size: 144775873
+    - path: models/housing_scaler.pkl
+      hash: md5
+      md5: 8974aaddc923a7588ec48f65741ff1e6
+      size: 1143

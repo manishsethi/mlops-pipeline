@@ -1,31 +1,23 @@
-# src/train.py
-
 import argparse
 import json
 import joblib
 import os
+import shutil
 import numpy as np
-import pandas as pd
 import mlflow
 import mlflow.sklearn
 from mlflow.models.signature import infer_signature
-
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.metrics import (
-    accuracy_score,
-    f1_score,
-    mean_squared_error,
-    mean_absolute_error,
-    r2_score
+    accuracy_score, f1_score,
+    mean_squared_error, mean_absolute_error, r2_score
 )
 
-from src.data_loader import (
-    load_and_preprocess_iris,
-    load_and_preprocess_housing
-)
+from src.data_loader import load_and_preprocess_iris, load_and_preprocess_housing
 from src.mlflow_config import setup_mlflow
+
 
 def train_classification():
     X_train, X_test, y_train, y_test = load_and_preprocess_iris()
@@ -33,7 +25,7 @@ def train_classification():
         "logistic_regression": LogisticRegression(random_state=42),
         "random_forest": RandomForestClassifier(n_estimators=100, random_state=42),
     }
-    best_score, best_name, best_model = 0, None, None
+    best_acc, best_name, best_model = 0, None, None
 
     for name, model in models.items():
         with mlflow.start_run(run_name=name):
@@ -44,7 +36,6 @@ def train_classification():
             f1 = f1_score(y_test, preds, average="weighted")
 
             signature = infer_signature(X_train, model.predict(X_train))
-            input_example = X_test[:5]
 
             mlflow.log_params(model.get_params())
             mlflow.log_metric("accuracy", acc)
@@ -54,13 +45,14 @@ def train_classification():
                 name="model",
                 registered_model_name=f"iris_{name}",
                 signature=signature,
-                input_example=input_example
+                input_example=X_test[:5]
             )
 
-            if acc > best_score:
-                best_score, best_name, best_model = acc, name, model
+            if acc > best_acc:
+                best_acc, best_name, best_model = acc, name, model
 
-    return best_name, best_model, {"accuracy": best_score, "feature_count": X_train.shape[1]}
+    return best_name, best_model, {"accuracy": best_acc, "feature_count": X_train.shape[1]}
+
 
 def train_regression():
     X_train, X_test, y_train, y_test = load_and_preprocess_housing()
@@ -69,7 +61,7 @@ def train_regression():
         "decision_tree": DecisionTreeRegressor(random_state=42),
         "random_forest": RandomForestRegressor(n_estimators=100, random_state=42),
     }
-    best_score, best_name, best_model = float("inf"), None, None
+    best_rmse, best_name, best_model = float("inf"), None, None
 
     for name, model in models.items():
         with mlflow.start_run(run_name=name):
@@ -82,7 +74,6 @@ def train_regression():
             mae = mean_absolute_error(y_test, preds)
 
             signature = infer_signature(X_train, model.predict(X_train))
-            input_example = X_test[:5]
 
             mlflow.log_params(model.get_params())
             mlflow.log_metric("rmse", rmse)
@@ -93,49 +84,49 @@ def train_regression():
                 name="model",
                 registered_model_name=f"housing_{name}",
                 signature=signature,
-                input_example=input_example
+                input_example=X_test[:5]
             )
 
-            if rmse < best_score:
-                best_score, best_name, best_model = rmse, name, model
+            if rmse < best_rmse:
+                best_rmse, best_name, best_model = rmse, name, model
 
-    return best_name, best_model, {"rmse": best_score, "feature_count": X_train.shape[1]}
+    return best_name, best_model, {"rmse": best_rmse, "feature_count": X_train.shape[1]}
+
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Train Iris classifier or California Housing regressor"
-    )
-    parser.add_argument(
-        "--task", choices=["iris", "housing"],
-        required=True, help="Choose 'iris' or 'housing'"
-    )
+    parser = argparse.ArgumentParser(description="Train ML models for Iris or Housing")
+    parser.add_argument("--task", choices=["iris", "housing"], required=True,
+                        help="Choose 'iris' or 'housing'")
     args = parser.parse_args()
 
     setup_mlflow()
-
     os.makedirs("models", exist_ok=True)
 
     if args.task == "iris":
         name, model, metrics = train_classification()
         model_path = "models/iris_best_model.pkl"
-        scaler_path = "models/iris_scaler.pkl"
+        scaler_src = "models/iris_scaler.pkl"  # data_loader should save this
+        metrics_file = "metrics_iris.json"
     else:
         name, model, metrics = train_regression()
         model_path = "models/housing_best_model.pkl"
-        scaler_path = "models/housing_scaler.pkl"
+        scaler_src = "models/housing_scaler.pkl"
+        metrics_file = "metrics_housing.json"
 
-    # Save best model and corresponding scaler
+    # Save best model
     joblib.dump(model, model_path)
-    # The scalers are saved in data_loader during preprocessing as 'models/scaler.pkl'.
-    # Copy/rename them to task-specific filenames here
-    if os.path.exists("models/scaler.pkl"):
-        os.rename("models/scaler.pkl", scaler_path)
 
-    with open(f"models/{args.task}_metrics.json", "w") as f:
-        metrics_to_save = {"task": args.task, "best_model": name, **metrics}
-        json.dump(metrics_to_save, f, indent=2)
+    # Ensure scaler exists for this task
+    default_scaler = "models/scaler.pkl"
+    if os.path.exists(default_scaler) and not os.path.exists(scaler_src):
+        shutil.copy(default_scaler, scaler_src)  # copy so it's still available for other tasks
+
+    # Save metrics JSON using correct name for DVC
+    with open(metrics_file, "w") as f:
+        json.dump({"task": args.task, "best_model": name, **metrics}, f, indent=2)
 
     print(f"[{args.task}] Best model: {name} | Metrics: {metrics}")
+
 
 if __name__ == "__main__":
     main()

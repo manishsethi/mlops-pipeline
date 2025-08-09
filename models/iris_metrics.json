@@ -1,0 +1,6 @@
+{
+  "task": "iris",
+  "best_model": "logistic_regression",
+  "accuracy": 0.9333333333333333,
+  "feature_count": 4
+}
