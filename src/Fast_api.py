@@ -1,11 +1,11 @@
 # src/Fast_api.py
 import logging
 import os
-from datetime import datetime
-from typing import List, Optional
-
 import joblib
 import numpy as np
+from datetime import datetime
+from typing import List, Optional
+from src.train import train_models
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ValidationInfo, field_validator
 
