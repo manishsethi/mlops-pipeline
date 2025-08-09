@@ -1,5 +1,4 @@
 # src/logger.py
-import json
 import logging
 import os
 import sqlite3

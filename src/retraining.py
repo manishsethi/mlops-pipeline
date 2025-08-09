@@ -2,12 +2,9 @@
 import logging
 import os
 import sqlite3
-from datetime import datetime, timedelta
-
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.metrics import accuracy_score, mean_squared_error
 
 from src.train import train_classification, train_regression
 
@@ -32,7 +29,6 @@ class ModelRetrainingSystem:
         """Check for model performance drift"""
         try:
             conn = sqlite3.connect("predictions.db")
-
             # Get recent predictions (last 7 days)
             query = """
                 SELECT input_data, prediction, timestamp
@@ -40,7 +36,6 @@ class ModelRetrainingSystem:
                 WHERE datetime(timestamp) > datetime('now', '-7 days')
                 ORDER BY timestamp DESC
             """
-
             df = pd.read_sql_query(query, conn)
             conn.close()
 

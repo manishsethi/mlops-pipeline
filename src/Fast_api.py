@@ -1,16 +1,16 @@
 # src/Fast_api.py
-import logging
 import os
 import joblib
 import numpy as np
 import logging
-import sqlite3, json
+import sqlite3
+import json
 from datetime import datetime
 from typing import List, Optional
-
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ValidationInfo, field_validator
 
+from src.metrics import metrics_collector  # your existing metrics collector object
 from src.metrics import metrics_endpoint_fastapi
 
 # =========================================================
@@ -70,8 +70,8 @@ def load_artifacts():
                 f"{model_path}, {scaler_path}"
             )
 
-
 load_artifacts()
+
 
 def log_prediction(task: str, features: list, prediction: list, response_time: float):
     conn = sqlite3.connect("predictions.db")
@@ -154,13 +154,6 @@ async def health_check():
         "timestamp": datetime.now().isoformat(),
     }
 
-
-from datetime import datetime
-import numpy as np
-from fastapi import HTTPException
-
-from src.metrics import metrics_collector  # your existing metrics collector object
-
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(request: PredictionRequest):
     start_time = datetime.now()
@@ -198,4 +191,3 @@ async def predict(request: PredictionRequest):
     except Exception as e:
         metrics_collector.record_error(error_type="prediction_failure")
         raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
-

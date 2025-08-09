@@ -1,9 +1,6 @@
 # src/validation.py
-from typing import List, Optional
-
 import numpy as np
 from pydantic import BaseModel, Field, validator
-
 
 class IrisFeatures(BaseModel):
     """Pydantic model for Iris dataset features"""
