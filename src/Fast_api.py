@@ -72,7 +72,7 @@ def load_artifacts():
 
 load_artifacts()
 
-def log_prediction(task, features, prediction, response_time):
+def log_prediction(task: str, features: list, prediction: list, response_time: float):
     conn = sqlite3.connect("predictions.db")
     cursor = conn.cursor()
     cursor.execute("""
@@ -154,29 +154,36 @@ async def health_check():
     }
 
 
+from datetime import datetime
+import numpy as np
+from fastapi import HTTPException
+
+from src.metrics import metrics_collector  # your existing metrics collector object
+
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(request: PredictionRequest):
     start_time = datetime.now()
 
     model = MODELS.get(request.task)
     scaler = SCALERS.get(request.task)
+
     if model is None or scaler is None:
         metrics_collector.record_error(error_type="model_missing")
-        raise HTTPException(status_code=500, detail=f"No model/scaler for {request.task}")
+        raise HTTPException(status_code=500, detail=f"No model/scaler loaded for task '{request.task}'.")
 
     try:
         features = np.array(request.features).reshape(1, -1)
         features_scaled = scaler.transform(features)
+
         prediction = model.predict(features_scaled)
         prediction_proba = model.predict_proba(features_scaled).tolist() if hasattr(model, "predict_proba") else None
 
-        # Calculate response time
         response_time = (datetime.now() - start_time).total_seconds()
 
-        # 🔹 Call SQLite logging function
+        # === Log prediction persistently to SQLite ===
         log_prediction(request.task, request.features, prediction.tolist(), response_time)
 
-        # 🔹 Record Prometheus metrics
+        # === Record Prometheus metrics ===
         metrics_collector.record_prediction(latency=response_time)
 
         return PredictionResponse(
