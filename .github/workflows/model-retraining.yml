@@ -1,0 +1,85 @@
+# .github/workflows/model-retraining.yml
+name: Automated Model Retraining
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  check-drift:
+    runs-on: ubuntu-latest
+    outputs:
+      needs-retraining: ${{ steps.drift-check.outputs.needs-retraining }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        
+    - name: Check for model drift
+      id: drift-check
+      run: |
+        python -c "
+        from src.retraining import ModelRetrainingSystem
+        system = ModelRetrainingSystem()
+        needs_retraining, reason = system.check_performance_drift()
+        print(f'needs-retraining={str(needs_retraining).lower()}')
+        print(f'reason={reason}')
+        " >> $GITHUB_OUTPUT
+
+  retrain-model:
+    needs: check-drift
+    runs-on: ubuntu-latest
+    if: needs.check-drift.outputs.needs-retraining == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        
+    - name: Retrain model
+      run: |
+        python src/train.py
+        
+    - name: Run model tests
+      run: |
+        pytest tests/test_model.py
+        
+    - name: Upload new model artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: retrained-model
+        path: |
+          models/best_model.pkl
+          models/scaler.pkl
+          metrics.json
+          
+    - name: Create pull request with new model
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: 'Automated model retraining'
+        title: 'Automated Model Retraining'
+        body: |
+          This PR contains an automatically retrained model due to detected performance drift.
+          
+          Please review the updated model metrics and approve if satisfactory.
+        branch: automated-retraining
