@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score, mean_squared_error
 
-from src.train import train_models
+from src.train import train_classification, train_regression
 
 
 class ModelRetrainingSystem:
@@ -81,16 +81,17 @@ class ModelRetrainingSystem:
         try:
             self.logger.info("Starting automated model retraining...")
 
-            # Backup current model
             self._backup_current_model()
 
-            # Retrain model
-            new_model = train_models()
+            # Retrain model based on type
+            if self.model_type == "classification":
+                _, new_model, _ = train_classification()
+            else:
+                _, new_model, _ = train_regression()
 
             if new_model is not None:
                 self.logger.info("Model retraining completed successfully")
 
-                # Validate new model
                 if self._validate_new_model(new_model):
                     self.logger.info("New model validated and deployed")
                     return True
