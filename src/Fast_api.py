@@ -1,13 +1,15 @@
 # src/Fastapi_app.py
-from fastapi import FastAPI, HTTPException
-from src.metrics import metrics_endpoint_fastapi
-from pydantic import BaseModel, field_validator, ValidationInfo
+import logging
+import os
+from datetime import datetime
 from typing import List, Optional
+
 import joblib
 import numpy as np
-import logging
-from datetime import datetime
-import os
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, ValidationInfo, field_validator
+
+from src.metrics import metrics_endpoint_fastapi
 
 # =========================================================
 # App Initialization

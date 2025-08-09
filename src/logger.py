@@ -1,9 +1,9 @@
 # src/logger.py
+import json
 import logging
+import os
 import sqlite3
 from datetime import datetime
-import json
-import os
 
 
 class SQLiteHandler(logging.Handler):

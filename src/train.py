@@ -1,24 +1,21 @@
 import argparse
 import json
-import joblib
 import os
 import shutil
-import numpy as np
+
+import joblib
 import mlflow
 import mlflow.sklearn
+import numpy as np
 from mlflow.models.signature import infer_signature
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.linear_model import LogisticRegression, LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.metrics import (accuracy_score, f1_score, mean_absolute_error,
+                             mean_squared_error, r2_score)
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.metrics import (
-    accuracy_score,
-    f1_score,
-    mean_squared_error,
-    mean_absolute_error,
-    r2_score,
-)
 
-from src.data_loader import load_and_preprocess_iris, load_and_preprocess_housing
+from src.data_loader import (load_and_preprocess_housing,
+                             load_and_preprocess_iris)
 from src.mlflow_config import setup_mlflow
 
 

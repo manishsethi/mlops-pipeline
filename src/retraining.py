@@ -1,12 +1,14 @@
 # src/retraining.py
-import sqlite3
-import pandas as pd
-import os
-import numpy as np
-from datetime import datetime, timedelta
-import joblib
-from sklearn.metrics import accuracy_score, mean_squared_error
 import logging
+import os
+import sqlite3
+from datetime import datetime, timedelta
+
+import joblib
+import numpy as np
+import pandas as pd
+from sklearn.metrics import accuracy_score, mean_squared_error
+
 from src.train import train_models
 
 

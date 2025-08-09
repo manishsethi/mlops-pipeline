@@ -1,12 +1,8 @@
 # src/metrics.py
-from prometheus_client import (
-    Counter,
-    Histogram,
-    Gauge,
-    generate_latest,
-    CONTENT_TYPE_LATEST,
-)
 import sqlite3
+
+from prometheus_client import (CONTENT_TYPE_LATEST, Counter, Gauge, Histogram,
+                               generate_latest)
 
 PREDICTION_COUNTER = Counter("ml_predictions_total", "Total number of predictions")
 PREDICTION_LATENCY = Histogram("ml_prediction_duration_seconds", "Prediction latency")

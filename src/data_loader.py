@@ -1,8 +1,9 @@
 import os
 import ssl
+
 import joblib
 import pandas as pd
-from sklearn.datasets import load_iris, fetch_california_housing
+from sklearn.datasets import fetch_california_housing, load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 

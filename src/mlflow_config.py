@@ -1,7 +1,8 @@
 # src/mlflow_config.py
+import os
+
 import mlflow
 import mlflow.sklearn
-import os
 
 
 def setup_mlflow():
