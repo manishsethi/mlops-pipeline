@@ -8,9 +8,9 @@ on:
     branches: [ main ]
 
 env:
-  DOCKER_IMAGE_NAME: ml-model-api
+  DOCKER_IMAGE_NAME: mlops-pipeline-ml-api
   DOCKER_REGISTRY: docker.io
-  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_USERNAME: manishsethi
 
 jobs:
   test:
