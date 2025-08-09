@@ -15,21 +15,19 @@ import os
 app = FastAPI(
     title="ML Model API",
     version="2.0.0",
-    description="API for serving multiple ML models (Iris classification & Housing regression)."
+    description="API for serving multiple ML models (Iris classification & Housing regression).",
 )
 
 # =========================================================
 # Configuration
 # =========================================================
 # Map of task -> expected feature count
-EXPECTED_FEATURES = {
-    "iris": 4,
-    "housing": 8
-}
+EXPECTED_FEATURES = {"iris": 4, "housing": 8}
 
 # Model and scaler storage
 MODELS = {}
 SCALERS = {}
+
 
 # =========================================================
 # Load Models & Scalers at Startup
@@ -47,10 +45,14 @@ def load_artifacts():
             except Exception as e:
                 logging.error(f"Error loading {task} artifacts: {e}")
         else:
-            logging.warning(f"Artifacts for task '{task}' not found: "
-                            f"{model_path}, {scaler_path}")
+            logging.warning(
+                f"Artifacts for task '{task}' not found: "
+                f"{model_path}, {scaler_path}"
+            )
+
 
 load_artifacts()
+
 
 # =========================================================
 # Request & Response Schemas
@@ -59,15 +61,20 @@ class PredictionRequest(BaseModel):
     task: str
     features: List[float]
 
-    @field_validator('features')
+    @field_validator("features")
     @classmethod
     def validate_features(cls, v, info: ValidationInfo):
-        task = info.data.get('task')  # access other fields from info.data dictionary
+        task = info.data.get("task")  # access other fields from info.data dictionary
         if task not in EXPECTED_FEATURES:
-            raise ValueError(f"Unknown task '{task}'. Must be one of {list(EXPECTED_FEATURES.keys())}")
+            raise ValueError(
+                f"Unknown task '{task}'. Must be one of {list(EXPECTED_FEATURES.keys())}"
+            )
         if len(v) != EXPECTED_FEATURES[task]:
-            raise ValueError(f"Expected {EXPECTED_FEATURES[task]} features for '{task}', got {len(v)}")
+            raise ValueError(
+                f"Expected {EXPECTED_FEATURES[task]} features for '{task}', got {len(v)}"
+            )
         return v
+
 
 class PredictionResponse(BaseModel):
     task: str
@@ -76,6 +83,7 @@ class PredictionResponse(BaseModel):
     response_time_seconds: float
     timestamp: str
 
+
 # =========================================================
 # Routes
 # =========================================================
@@ -83,8 +91,14 @@ class PredictionResponse(BaseModel):
 async def root():
     return {
         "message": "Welcome to the ML Model API",
-        "available_endpoints": ["/predict (POST)", "/health (GET)", "/docs", "/metrics (GET)"]
+        "available_endpoints": [
+            "/predict (POST)",
+            "/health (GET)",
+            "/docs",
+            "/metrics (GET)",
+        ],
     }
+
 
 @app.get("/metrics")
 def metrics():
@@ -97,8 +111,9 @@ async def health_check():
     return {
         "status": "healthy",
         "loaded_models": list(MODELS.keys()),
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
     }
+
 
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(request: PredictionRequest):
@@ -109,7 +124,9 @@ async def predict(request: PredictionRequest):
     scaler = SCALERS.get(request.task)
 
     if model is None or scaler is None:
-        raise HTTPException(status_code=500, detail=f"No model/scaler loaded for task '{request.task}'.")
+        raise HTTPException(
+            status_code=500, detail=f"No model/scaler loaded for task '{request.task}'."
+        )
 
     try:
         # Prepare input
@@ -119,7 +136,7 @@ async def predict(request: PredictionRequest):
         # Predict
         prediction = model.predict(features_scaled)
         prediction_proba = None
-        if hasattr(model, 'predict_proba'):
+        if hasattr(model, "predict_proba"):
             prediction_proba = model.predict_proba(features_scaled).tolist()
 
         response_time = (datetime.now() - start_time).total_seconds()
@@ -129,7 +146,7 @@ async def predict(request: PredictionRequest):
             prediction=prediction.tolist(),
             prediction_probabilities=prediction_proba,
             response_time_seconds=response_time,
-            timestamp=datetime.now().isoformat()
+            timestamp=datetime.now().isoformat(),
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")

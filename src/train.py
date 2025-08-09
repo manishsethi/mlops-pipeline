@@ -11,8 +11,11 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.metrics import (
-    accuracy_score, f1_score,
-    mean_squared_error, mean_absolute_error, r2_score
+    accuracy_score,
+    f1_score,
+    mean_squared_error,
+    mean_absolute_error,
+    r2_score,
 )
 
 from src.data_loader import load_and_preprocess_iris, load_and_preprocess_housing
@@ -45,13 +48,17 @@ def train_classification():
                 name="model",
                 registered_model_name=f"iris_{name}",
                 signature=signature,
-                input_example=X_test[:5]
+                input_example=X_test[:5],
             )
 
             if acc > best_acc:
                 best_acc, best_name, best_model = acc, name, model
 
-    return best_name, best_model, {"accuracy": best_acc, "feature_count": X_train.shape[1]}
+    return (
+        best_name,
+        best_model,
+        {"accuracy": best_acc, "feature_count": X_train.shape[1]},
+    )
 
 
 def train_regression():
@@ -84,7 +91,7 @@ def train_regression():
                 name="model",
                 registered_model_name=f"housing_{name}",
                 signature=signature,
-                input_example=X_test[:5]
+                input_example=X_test[:5],
             )
 
             if rmse < best_rmse:
@@ -95,8 +102,12 @@ def train_regression():
 
 def main():
     parser = argparse.ArgumentParser(description="Train ML models for Iris or Housing")
-    parser.add_argument("--task", choices=["iris", "housing"], required=True,
-                        help="Choose 'iris' or 'housing'")
+    parser.add_argument(
+        "--task",
+        choices=["iris", "housing"],
+        required=True,
+        help="Choose 'iris' or 'housing'",
+    )
     args = parser.parse_args()
 
     setup_mlflow()
@@ -119,7 +130,9 @@ def main():
     # Ensure scaler exists for this task
     default_scaler = "models/scaler.pkl"
     if os.path.exists(default_scaler) and not os.path.exists(scaler_src):
-        shutil.copy(default_scaler, scaler_src)  # copy so it's still available for other tasks
+        shutil.copy(
+            default_scaler, scaler_src
+        )  # copy so it's still available for other tasks
 
     # Save metrics JSON using correct name for DVC
     with open(metrics_file, "w") as f:
