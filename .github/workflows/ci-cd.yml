@@ -6,6 +6,10 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
+  workflow_run:
+    workflows: ["Automated Model Retraining"]
+    types:
+      - completed
 
 env:
   DOCKER_IMAGE_NAME: mlops-pipeline-ml-api
