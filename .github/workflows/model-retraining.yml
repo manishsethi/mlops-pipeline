@@ -64,7 +64,7 @@ jobs:
         pytest tests/test_model.py
         
     - name: Upload new model artifacts
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v4
       with:
         name: retrained-model
         path: |
