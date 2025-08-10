@@ -27,10 +27,21 @@ class ModelRetrainingSystem:
         self.logger = logging.getLogger(__name__)
 
     def check_performance_drift(self):
-        """Check for model performance drift"""
         try:
             conn = sqlite3.connect("predictions.db")
-            # Get recent predictions (last 7 days)
+            cursor = conn.cursor()
+            # Ensure table exists for pipeline robustness
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS predictions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    task TEXT,
+                    input_data TEXT,
+                    prediction TEXT,
+                    response_time REAL,
+                    timestamp TEXT
+                )
+            """)
+            # Now proceed with your query...
             query = """
                 SELECT input_data, prediction, timestamp
                 FROM predictions 

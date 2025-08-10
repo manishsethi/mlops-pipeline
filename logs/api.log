@@ -18,3 +18,10 @@
 2025-08-09 20:27:32,793 [ERROR] ml_model_api: Failed to remove directory predictions.db: [Errno 16] Device or resource busy: 'predictions.db'
 2025-08-09 20:31:17,325 [INFO] ml_model_api: Loaded iris model and scaler.
 2025-08-09 20:31:17,556 [INFO] ml_model_api: Loaded housing model and scaler.
+2025-08-10 06:42:54,207 [INFO] ml_model_api: Database initialized at /app/data/predictions.db
+2025-08-10 06:42:54,720 [INFO] ml_model_api: Loaded artifacts for task 'iris'
+2025-08-10 06:42:55,066 [INFO] ml_model_api: Loaded artifacts for task 'housing'
+2025-08-10 06:42:55,068 [INFO] ml_model_api: Database initialized at /app/data/predictions.db
+2025-08-10 06:42:55,068 [INFO] ml_model_api: Loaded artifacts for task 'iris'
+2025-08-10 06:42:55,273 [INFO] ml_model_api: Loaded artifacts for task 'housing'
+2025-08-10 06:42:55,273 [INFO] ml_model_api: Startup initialization complete
