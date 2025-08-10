@@ -1,10 +1,10 @@
-# .github/workflows/model-retraining.yml
 name: Automated Model Retraining
 
 on:
   schedule:
-    - cron: '0 2 * * *'    # Run daily at 2 AM UTC
-  workflow_dispatch:        # Allow manual triggering
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:  # Allow manual triggering
 
 permissions:
   contents: write
@@ -16,7 +16,7 @@ jobs:
     outputs:
       needs-retraining: ${{ steps.drift-check.outputs.needs-retraining }}
     steps:
-      - name: Checkout code
+      - name: Checkout code with LFS
         uses: actions/checkout@v4
         with:
           lfs: true
@@ -27,8 +27,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
       - name: Check for model drift
         id: drift-check
@@ -56,7 +55,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install dependencies (including pytest and git-lfs)
+      - name: Install dependencies (incl. pytest and git-lfs)
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
@@ -71,28 +70,25 @@ jobs:
           PYTHONPATH=$(pwd) python src/train.py --task housing
 
       - name: Run model tests
-        run: |
-          PYTHONPATH=$(pwd) pytest tests/test_model.py
+        run: PYTHONPATH=$(pwd) pytest tests/test_model.py
 
-      # (Optionally keep upload-artifact for CI evidence)
-      - name: Check models folder files before upload
+      - name: Debug: List model directory
         run: ls -lh models/
 
-      - name: Upload retrained model artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: retrained-model
-          path: |
-            models/best_model.pkl
-            models/scaler.pkl
-          if-no-files-found: warn
-      - name: List model directory contents
-        run: ls -l models/
       - name: Commit and push retrained models with LFS
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f models/best_model.pkl models/scaler.pkl
+
+          # Add exact model and scaler files actually produced
+          git add -f models/housing_best_model.pkl \
+                  models/housing_scaler.pkl \
+                  models/iris_best_model.pkl \
+                  models/iris_scaler.pkl \
+                  models/scaler.pkl \
+                  metrics.json \
+                  models/iris_metrics.json || echo "Nothing to add"
+
           git commit -m "Automated retraining: update model artifacts" || echo "No changes to commit"
           git push origin HEAD:automated-retraining --force-with-lease
 
@@ -107,4 +103,3 @@ jobs:
             
             Please review the updated model metrics and approve if satisfactory.
           branch: automated-retraining
-          push-to-fork: false
