@@ -1,0 +1,14 @@
+artifact_uri: file:///home/runner/work/mlops-pipeline/mlops-pipeline/mlruns/665440816365926686/f04a51ac8f2048c69e543649ffb6bc32/artifacts
+end_time: 1754813956837
+entry_point_name: ''
+experiment_id: '665440816365926686'
+lifecycle_stage: active
+run_id: f04a51ac8f2048c69e543649ffb6bc32
+run_name: random_forest
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1754813954606
+status: 3
+tags: []
+user_id: runner

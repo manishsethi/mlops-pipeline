@@ -1,0 +1,10 @@
+artifact_location: file:///home/runner/work/mlops-pipeline/mlops-pipeline/mlruns/665440816365926686/models/m-88c3834939d34f4f8efb6c5eba733fb7/artifacts
+creation_timestamp: 1754813962790
+experiment_id: '665440816365926686'
+last_updated_timestamp: 1754813964816
+model_id: m-88c3834939d34f4f8efb6c5eba733fb7
+model_type: null
+name: model
+source_run_id: d53e8cea74c44a7f8f224eef23956e09
+status: 2
+status_message: null
