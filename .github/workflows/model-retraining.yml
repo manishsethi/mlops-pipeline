@@ -1,9 +1,9 @@
 name: Automated Model Retraining
 
 on:
-  # schedule:
-  #   # Run daily at 2 AM UTC
-  #   - cron: '0 2 * * *'
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
   workflow_dispatch:  # Allow manual triggering
 
 permissions:
@@ -43,7 +43,7 @@ jobs:
   retrain-model:
     needs: check-drift
     runs-on: ubuntu-latest
-    # if: needs.check-drift.outputs.needs-retraining == 'true'
+    if: needs.check-drift.outputs.needs-retraining == 'true'
     steps:
       - name: Checkout code with LFS
         uses: actions/checkout@v4
