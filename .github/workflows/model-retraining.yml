@@ -33,12 +33,15 @@ jobs:
       id: drift-check
       run: |
         python -c "
+        import sys
         from src.retraining import ModelRetrainingSystem
         system = ModelRetrainingSystem()
         needs_retraining, reason = system.check_performance_drift()
-        print(f'needs-retraining={str(needs_retraining).lower()}')
-        print(f'reason={reason}')
-        " >> $GITHUB_OUTPUT
+        with open('${GITHUB_OUTPUT}', 'a') as fh:
+        fh.write(f'needs-retraining={str(needs_retraining).lower()}\n')
+        fh.write(f'reason={reason}\n')
+        "
+
   retrain-model:
     needs: check-drift
     runs-on: ubuntu-latest
@@ -90,7 +93,6 @@ jobs:
 
         git commit -m "Automated retraining: update model artifacts" || echo "No changes to commit"
         git push origin HEAD:automated-retraining --force-with-lease
-
     - name: Create pull request with new model
       uses: peter-evans/create-pull-request@v5
       with:
