@@ -15,6 +15,92 @@ Before running the application locally or contributing, make sure you have:
 
 ---
 
+## Data Versioning with DVC
+
+This project uses **DVC (Data Version Control)** to effectively manage and version **datasets** and **model artifacts** alongside your Git repository. DVC helps track dataset versions, ensures reproducibility, and simplifies collaboration on machine learning projects by treating large datasets and models like code in Git.
+
+### What is DVC?
+
+- DVC stores metadata and pointers for large datasets and models without storing the actual data in Git.
+- It enables versioning datasets, sharing them across teams, and running reproducible ML pipelines.
+- Works seamlessly with cloud storage and local file systems.
+
+---
+
+## Loading Data in Your Code
+
+### Example: Loading Dataset for Training or Prediction
+
+Your training or inference script loads data directly from the `data/` directory synchronized by DVC:
+
+```
+
+import pandas as pd
+
+# Load your dataset, for example CSV data
+
+data_path = "data/train.csv"
+df = pd.read_csv(data_path)
+
+# Proceed with training, validation, or prediction
+
+```
+
+This ensures you always use the dataset version corresponding to your current Git commit, guaranteeing reproducibility.
+
+---
+
+## Typical Workflow with DVC and This Repo
+
+1. **Clone the repo**
+
+```
+
+git clone https://github.com/manishsethi/mlops-pipeline.git
+cd mlops-pipeline
+
+```
+
+2. **Install DVC and dependencies**
+
+```
+
+pip install -r requirements.txt
+pip install dvc
+
+```
+
+3. **Pull datasets managed by DVC**
+
+```
+
+dvc pull
+
+```
+
+4. **Run training or start API**
+
+```
+
+python src/train.py --task iris
+
+# or
+
+uvicorn src.Fast_api:app --host 0.0.0.0 --port 5000 --reload
+
+```
+
+---
+
+## How DVC is Used in This Project
+
+- The **`data/` folder** containing input datasets is versioned using DVC.
+- When datasets change (e.g., new training data), DVC tracks those changes via `.dvc` files committed to Git.
+- Model artifacts saved during retraining (like `.pkl` files) can also be managed via DVC if configured.
+- To work with the correct data versions, use DVC commands to checkout and sync data to your workspace.
+
+---
+
 ## Running the Application Locally
 
 ### Using Docker Compose (Recommended)
