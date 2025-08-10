@@ -1,5 +1,3 @@
-# src/Fast_api.py
-
 import os
 import joblib
 import numpy as np
@@ -9,11 +7,11 @@ import json
 import shutil
 from datetime import datetime
 from typing import List, Optional
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ValidationInfo, field_validator
 
-from src.metrics import metrics_collector
-from src.metrics import metrics_endpoint_fastapi
+from src.metrics import metrics_collector, metrics_endpoint_fastapi
 
 # =========================================================
 # Logging Configuration
@@ -50,7 +48,7 @@ else:
 
 EXPECTED_FEATURES = {"iris": 4, "housing": 8}
 
-# If a directory exists at DB_PATH, remove it
+# Clean up accidental directory at DB_PATH
 if os.path.exists(DB_PATH) and os.path.isdir(DB_PATH):
     logger.warning(f"{DB_PATH} exists as a directory — removing it")
     try:
@@ -97,7 +95,6 @@ def init_db():
         conn.commit()
         conn.close()
 
-# Only initialize DB when not collecting tests
 if not os.environ.get("PYTEST_CURRENT_TEST"):
     init_db()
 
@@ -200,7 +197,10 @@ async def predict(request: PredictionRequest):
 
     if model is None or scaler is None:
         metrics_collector.record_error(error_type="model_missing")
-        raise HTTPException(500, f"No model/scaler for task '{request.task}'")
+        raise HTTPException(
+            status_code=500,
+            detail=f"No model/scaler loaded for task '{request.task}'"
+        )
 
     try:
         arr = np.array(request.features).reshape(1, -1)
@@ -222,11 +222,8 @@ async def predict(request: PredictionRequest):
         )
     except Exception as e:
         metrics_collector.record_error(error_type="prediction_failure")
-        raise HTTPException(500, f"Prediction error: {e}")
+        raise HTTPException(status_code=500, detail=f"Prediction error: {e}")
 
-# =========================================================
-# Startup Event
-# =========================================================
 @app.on_event("startup")
 async def on_startup():
     if not os.environ.get("PYTEST_CURRENT_TEST"):
