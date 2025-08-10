@@ -57,11 +57,11 @@ jobs:
         
     - name: Retrain model
       run: |
-        python src/train.py
+        PYTHONPATH=$(pwd) python src/train.py
         
     - name: Run model tests
       run: |
-        pytest tests/test_model.py
+        PYTHONPATH=$(pwd) pytest tests/test_model.py
         
     - name: Upload new model artifacts
       uses: actions/upload-artifact@v4
