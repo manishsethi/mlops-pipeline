@@ -43,7 +43,7 @@ jobs:
   retrain-model:
     needs: check-drift
     runs-on: ubuntu-latest
-    if: needs.check-drift.outputs.needs-retraining == 'true'
+    # if: needs.check-drift.outputs.needs-retraining == 'true'
     steps:
     - name: Checkout code with LFS
       uses: actions/checkout@v4
