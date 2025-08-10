@@ -59,7 +59,7 @@ def test_root_endpoint(client):
     assert response.status_code == 200
     json_resp = response.json()
     assert "message" in json_resp
-    assert "available_endpoints" in json_resp
+    assert "endpoints" in json_resp
 
 def test_health_endpoint(client):
     response = client.get("/health")

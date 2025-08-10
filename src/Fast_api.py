@@ -177,7 +177,7 @@ class PredictionResponse(BaseModel):
 async def root():
     return {
         "message": "Welcome to the ML Model API",
-        "endpoints": ["/predict", "/health", "/metrics", "/docs"],
+        "available_endpoints": ["/predict", "/health", "/metrics", "/docs"],
     }
 
 @app.get("/metrics")
