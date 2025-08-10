@@ -1,4 +1,5 @@
 # src/Fast_api.py
+
 import os
 import joblib
 import numpy as np
@@ -11,17 +12,20 @@ from typing import List, Optional
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ValidationInfo, field_validator
 
-from src.metrics import metrics_collector  # your existing metrics collector object
+from src.metrics import metrics_collector
 from src.metrics import metrics_endpoint_fastapi
 
 # =========================================================
 # Logging Configuration
 # =========================================================
+logs_dir = os.path.join(os.getcwd(), "logs")
+os.makedirs(logs_dir, exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     handlers=[
-        logging.FileHandler("logs/api.log"),  # Log file
+        logging.FileHandler(os.path.join(logs_dir, "api.log")),
         logging.StreamHandler()
     ],
 )
@@ -30,79 +34,104 @@ logger = logging.getLogger("ml_model_api")
 # =========================================================
 # Paths & Config
 # =========================================================
-DB_PATH = "/app/data/predictions.db"  # allow override via env var
-EXPECTED_FEATURES = {"iris": 4, "housing": 8}  # Map of task -> expected feature count
+# Determine a writable database path
+if os.environ.get("TESTING") or not os.access("/app", os.W_OK):
+    if os.environ.get("TESTING"):
+        DB_PATH = ":memory:"
+        logger.info("Using in-memory database for testing")
+    else:
+        data_dir = os.path.join(os.getcwd(), "data")
+        os.makedirs(data_dir, exist_ok=True)
+        DB_PATH = os.path.join(data_dir, "predictions.db")
+        logger.info(f"Using database at: {DB_PATH}")
+else:
+    DB_PATH = "/app/data/predictions.db"
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 
-# Ensure logs directory exists
-os.makedirs("logs", exist_ok=True)
+EXPECTED_FEATURES = {"iris": 4, "housing": 8}
 
-# Ensure DB path dir exists & fix accidental dir issue
-if os.path.isdir(DB_PATH):
-    logging.warning(f"{DB_PATH} exists as a directory — removing it so SQLite can create a file")
+# If a directory exists at DB_PATH, remove it
+if os.path.exists(DB_PATH) and os.path.isdir(DB_PATH):
+    logger.warning(f"{DB_PATH} exists as a directory — removing it")
     try:
         shutil.rmtree(DB_PATH)
     except Exception as e:
         logger.error(f"Failed to remove directory {DB_PATH}: {e}")
 
-
-parent_dir = os.path.join(os.getcwd(), "app")
-os.makedirs(parent_dir, exist_ok=True)
-
 # =========================================================
 # Initialize DB
 # =========================================================
 def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS predictions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            task TEXT,
-            input_data TEXT,
-            prediction TEXT,
-            response_time REAL,
-            timestamp TEXT
-        )
-    """)
-    conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS predictions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                task TEXT,
+                input_data TEXT,
+                prediction TEXT,
+                response_time REAL,
+                timestamp TEXT
+            )
+        """)
+        conn.commit()
+        conn.close()
+        logger.info(f"Database initialized at {DB_PATH}")
+    except sqlite3.OperationalError as e:
+        logger.error(f"DB init failed: {e}. Falling back to in-memory DB.")
+        global DB_PATH
+        DB_PATH = ":memory:"
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS predictions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                task TEXT,
+                input_data TEXT,
+                prediction TEXT,
+                response_time REAL,
+                timestamp TEXT
+            )
+        """)
+        conn.commit()
+        conn.close()
 
-init_db()
+# Only initialize DB when not collecting tests
+if not os.environ.get("PYTEST_CURRENT_TEST"):
+    init_db()
 
 # =========================================================
-# App Initialization
+# FastAPI App Setup
 # =========================================================
 app = FastAPI(
     title="ML Model API",
     version="2.0.0",
-    description="API for serving multiple ML models (Iris classification & Housing regression).",
+    description="API for serving multiple ML models (Iris & Housing).",
 )
 
-# Model and scaler storage
 MODELS = {}
 SCALERS = {}
 
-# =========================================================
-# Load Models & Scalers at Startup
-# =========================================================
 def load_artifacts():
-    for task in EXPECTED_FEATURES.keys():
-        model_path = f"models/{task}_best_model.pkl"
-        scaler_path = f"models/{task}_scaler.pkl"
-        if os.path.exists(model_path) and os.path.exists(scaler_path):
+    for task in EXPECTED_FEATURES:
+        mpath = f"models/{task}_best_model.pkl"
+        spath = f"models/{task}_scaler.pkl"
+        if os.path.exists(mpath) and os.path.exists(spath):
             try:
-                MODELS[task] = joblib.load(model_path)
-                SCALERS[task] = joblib.load(scaler_path)
-                logger.info(f"Loaded {task} model and scaler.")
+                MODELS[task] = joblib.load(mpath)
+                SCALERS[task] = joblib.load(spath)
+                logger.info(f"Loaded artifacts for task '{task}'")
             except Exception as e:
-                logger.error(f"Error loading {task} artifacts: {e}")
+                logger.error(f"Error loading artifacts for '{task}': {e}")
         else:
-            logger.warning(f"Artifacts for '{task}' not found: {model_path}, {scaler_path}")
+            logger.warning(f"Artifacts missing for '{task}': {mpath}, {spath}")
 
-load_artifacts()
+if not os.environ.get("PYTEST_CURRENT_TEST"):
+    load_artifacts()
 
 # =========================================================
-# Utility: Log prediction
+# Prediction Logging Utility
 # =========================================================
 def log_prediction(task: str, features: list, prediction: list, response_time: float):
     try:
@@ -118,7 +147,7 @@ def log_prediction(task: str, features: list, prediction: list, response_time: f
         logger.error(f"Failed to log prediction: {e}")
 
 # =========================================================
-# Request & Response Schemas
+# Pydantic Schemas
 # =========================================================
 class PredictionRequest(BaseModel):
     task: str
@@ -129,7 +158,7 @@ class PredictionRequest(BaseModel):
     def validate_features(cls, v, info: ValidationInfo):
         task = info.data.get("task")
         if task not in EXPECTED_FEATURES:
-            raise ValueError(f"Unknown task '{task}'. Must be one of {list(EXPECTED_FEATURES.keys())}")
+            raise ValueError(f"Unknown task '{task}'. Choose from {list(EXPECTED_FEATURES.keys())}")
         if len(v) != EXPECTED_FEATURES[task]:
             raise ValueError(f"Expected {EXPECTED_FEATURES[task]} features for '{task}', got {len(v)}")
         return v
@@ -142,18 +171,13 @@ class PredictionResponse(BaseModel):
     timestamp: str
 
 # =========================================================
-# Routes
+# API Endpoints
 # =========================================================
 @app.get("/")
 async def root():
     return {
         "message": "Welcome to the ML Model API",
-        "available_endpoints": [
-            "/predict (POST)",
-            "/health (GET)",
-            "/docs",
-            "/metrics (GET)",
-        ],
+        "endpoints": ["/predict", "/health", "/metrics", "/docs"],
     }
 
 @app.get("/metrics")
@@ -170,38 +194,42 @@ async def health_check():
 
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(request: PredictionRequest):
-    start_time = datetime.now()
-
+    start = datetime.now()
     model = MODELS.get(request.task)
     scaler = SCALERS.get(request.task)
 
     if model is None or scaler is None:
         metrics_collector.record_error(error_type="model_missing")
-        raise HTTPException(status_code=500, detail=f"No model/scaler loaded for task '{request.task}'.")
+        raise HTTPException(500, f"No model/scaler for task '{request.task}'")
 
     try:
-        features = np.array(request.features).reshape(1, -1)
-        features_scaled = scaler.transform(features)
+        arr = np.array(request.features).reshape(1, -1)
+        scaled = scaler.transform(arr)
 
-        prediction = model.predict(features_scaled)
-        prediction_proba = model.predict_proba(features_scaled).tolist() if hasattr(model, "predict_proba") else None
+        preds = model.predict(scaled)
+        probs = model.predict_proba(scaled).tolist() if hasattr(model, "predict_proba") else None
 
-        response_time = (datetime.now() - start_time).total_seconds()
-
-        # Log prediction persistently to SQLite
-        log_prediction(request.task, request.features, prediction.tolist(), response_time)
-
-        # Record Prometheus metrics
-        metrics_collector.record_prediction(latency=response_time)
+        rt = (datetime.now() - start).total_seconds()
+        log_prediction(request.task, request.features, preds.tolist(), rt)
+        metrics_collector.record_prediction(latency=rt)
 
         return PredictionResponse(
             task=request.task,
-            prediction=prediction.tolist(),
-            prediction_probabilities=prediction_proba,
-            response_time_seconds=response_time,
+            prediction=preds.tolist(),
+            prediction_probabilities=probs,
+            response_time_seconds=rt,
             timestamp=datetime.now().isoformat(),
         )
-
     except Exception as e:
         metrics_collector.record_error(error_type="prediction_failure")
-        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+        raise HTTPException(500, f"Prediction error: {e}")
+
+# =========================================================
+# Startup Event
+# =========================================================
+@app.on_event("startup")
+async def on_startup():
+    if not os.environ.get("PYTEST_CURRENT_TEST"):
+        init_db()
+        load_artifacts()
+        logger.info("Startup initialization complete")
