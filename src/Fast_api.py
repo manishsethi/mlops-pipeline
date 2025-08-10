@@ -62,6 +62,7 @@ if os.path.exists(DB_PATH) and os.path.isdir(DB_PATH):
 # Initialize DB
 # =========================================================
 def init_db():
+    global DB_PATH
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
@@ -80,7 +81,6 @@ def init_db():
         logger.info(f"Database initialized at {DB_PATH}")
     except sqlite3.OperationalError as e:
         logger.error(f"DB init failed: {e}. Falling back to in-memory DB.")
-        global DB_PATH
         DB_PATH = ":memory:"
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
