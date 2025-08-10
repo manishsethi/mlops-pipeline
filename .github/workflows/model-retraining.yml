@@ -32,14 +32,13 @@ jobs:
     - name: Check for model drift
       id: drift-check
       run: |
-        python -c "
-        import sys
+        python -c 'import sys
         from src.retraining import ModelRetrainingSystem
         system = ModelRetrainingSystem()
         needs_retraining, reason = system.check_performance_drift()
-        print(f'needs-retraining={str(needs_retraining).lower()}')
-        print(f'reason={reason}')
-        " >> $GITHUB_OUTPUT"
+        with open("'"${GITHUB_OUTPUT}"'", "a") as fh:
+            fh.write(f"needs-retraining={str(needs_retraining).lower()}\n")
+            fh.write(f"reason={reason}\n")'
 
   retrain-model:
     needs: check-drift
