@@ -230,3 +230,4 @@ async def on_startup():
         init_db()
         load_artifacts()
         logger.info("Startup initialization complete")
+

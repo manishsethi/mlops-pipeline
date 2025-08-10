@@ -16,6 +16,19 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+  retrain-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.retrain  # create this Dockerfile for retrain service
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./scripts:/app/scripts  # if needed for retrain scripts
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/trigger-retraining"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   prometheus:
     image: prom/prometheus
