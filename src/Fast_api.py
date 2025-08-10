@@ -45,7 +45,7 @@ if os.path.isdir(DB_PATH):
         logger.error(f"Failed to remove directory {DB_PATH}: {e}")
 
 
-parent_dir = os.path.dirname(DB_PATH) or "."
+parent_dir = os.path.join(os.getcwd(), "app")
 os.makedirs(parent_dir, exist_ok=True)
 
 # =========================================================
