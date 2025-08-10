@@ -57,7 +57,8 @@ jobs:
         
     - name: Retrain model
       run: |
-        PYTHONPATH=$(pwd) python src/train.py
+        PYTHONPATH=$(pwd) python src/train.py --task iris
+        PYTHONPATH=$(pwd) python src/train.py --task housing
         
     - name: Run model tests
       run: |
