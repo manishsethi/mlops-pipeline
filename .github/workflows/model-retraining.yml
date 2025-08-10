@@ -37,10 +37,9 @@ jobs:
         from src.retraining import ModelRetrainingSystem
         system = ModelRetrainingSystem()
         needs_retraining, reason = system.check_performance_drift()
-        with open('${GITHUB_OUTPUT}', 'a') as fh:
-        fh.write(f'needs-retraining={str(needs_retraining).lower()}\n')
-        fh.write(f'reason={reason}\n')
-        "
+        print(f'needs-retraining={str(needs_retraining).lower()}')
+        print(f'reason={reason}')
+        " >> $GITHUB_OUTPUT"
 
   retrain-model:
     needs: check-drift
