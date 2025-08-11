@@ -1,0 +1,14 @@
+artifact_uri: file:///home/runner/work/mlops-pipeline/mlops-pipeline/mlruns/665440816365926686/d53e8cea74c44a7f8f224eef23956e09/artifacts
+end_time: 1754813964828
+entry_point_name: ''
+experiment_id: '665440816365926686'
+lifecycle_stage: active
+run_id: d53e8cea74c44a7f8f224eef23956e09
+run_name: decision_tree
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1754813962565
+status: 3
+tags: []
+user_id: runner

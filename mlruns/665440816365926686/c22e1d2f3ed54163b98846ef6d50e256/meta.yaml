@@ -1,0 +1,14 @@
+artifact_uri: file:///home/runner/work/mlops-pipeline/mlops-pipeline/mlruns/665440816365926686/c22e1d2f3ed54163b98846ef6d50e256/artifacts
+end_time: 1754813954604
+entry_point_name: ''
+experiment_id: '665440816365926686'
+lifecycle_stage: active
+run_id: c22e1d2f3ed54163b98846ef6d50e256
+run_name: logistic_regression
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1754813952138
+status: 3
+tags: []
+user_id: runner
