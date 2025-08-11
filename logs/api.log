@@ -25,3 +25,17 @@
 2025-08-10 06:42:55,068 [INFO] ml_model_api: Loaded artifacts for task 'iris'
 2025-08-10 06:42:55,273 [INFO] ml_model_api: Loaded artifacts for task 'housing'
 2025-08-10 06:42:55,273 [INFO] ml_model_api: Startup initialization complete
+2025-08-10 08:30:57,637 [INFO] ml_model_api: Database initialized at /app/data/predictions.db
+2025-08-10 08:30:58,158 [INFO] ml_model_api: Loaded artifacts for task 'iris'
+2025-08-10 08:30:58,449 [INFO] ml_model_api: Loaded artifacts for task 'housing'
+2025-08-10 08:30:58,451 [INFO] ml_model_api: Database initialized at /app/data/predictions.db
+2025-08-10 08:30:58,452 [INFO] ml_model_api: Loaded artifacts for task 'iris'
+2025-08-10 08:30:58,631 [INFO] ml_model_api: Loaded artifacts for task 'housing'
+2025-08-10 08:30:58,631 [INFO] ml_model_api: Startup initialization complete
+2025-08-10 15:56:36,245 [INFO] ml_model_api: Database initialized at /app/data/predictions.db
+2025-08-10 15:56:37,240 [INFO] ml_model_api: Loaded artifacts for task 'iris'
+2025-08-10 15:56:37,522 [INFO] ml_model_api: Loaded artifacts for task 'housing'
+2025-08-10 15:56:37,525 [INFO] ml_model_api: Database initialized at /app/data/predictions.db
+2025-08-10 15:56:37,525 [INFO] ml_model_api: Loaded artifacts for task 'iris'
+2025-08-10 15:56:37,729 [INFO] ml_model_api: Loaded artifacts for task 'housing'
+2025-08-10 15:56:37,729 [INFO] ml_model_api: Startup initialization complete
